@@ -1,0 +1,32 @@
+name: Validar aplicación Windows
+
+on:
+  push:
+    branches: [Develop]
+  pull_request:
+    branches: [Develop, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validar:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Restaurar
+        run: dotnet restore PrestamoLibros.sln
+      - name: Compilar
+        run: dotnet build PrestamoLibros.sln -c Release --no-restore --warnaserror
+      - name: Probar lógica y almacenamiento
+        run: dotnet run --project tests/PrestamoLibros.Tests -c Release --no-build
+      - name: Publicar para Windows x64
+        run: dotnet publish src/PrestamoLibros.WinForms -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o artifacts/win-x64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PrestamoLibros-win-x64
+          path: artifacts/win-x64/
